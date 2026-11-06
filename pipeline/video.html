@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<style>
+@font-face{font-family:Cairo;font-weight:700;src:url(deps/package/files/cairo-arabic-700-normal.woff2) format("woff2")}
+@font-face{font-family:Cairo;font-weight:900;src:url(deps/package/files/cairo-arabic-900-normal.woff2) format("woff2")}
+@font-face{font-family:CairoL;font-weight:700;src:url(deps/package/files/cairo-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:CairoL;font-weight:900;src:url(deps/package/files/cairo-latin-900-normal.woff2) format("woff2")}
+:root{--bg:#0d1b2e;--bg2:#13284a;--y:#ffc928;--r:#ef3b36;--g:#2fcf6b;--w:#f7f7f2;--mut:#8ea3c2;--blue:#2f8ff0}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1920px;height:1080px;overflow:hidden;background:var(--bg)}
+body{font-family:CairoL,Cairo,sans-serif;font-weight:700;color:var(--w)}
+#stage{position:absolute;inset:0;background:radial-gradient(1200px 800px at 70% 30%,var(--bg2),var(--bg))}
+.scene{position:absolute;inset:0;display:none;overflow:hidden}
+.a{will-change:transform,opacity}
+.title{position:absolute;top:150px;right:120px;font-size:96px;font-weight:900;line-height:1.15}
+.title small{display:block;font-size:44px;color:var(--y);font-weight:700}
+.y{color:var(--y)} .r{color:var(--r)} .g{color:var(--g)}
+.card{background:var(--w);color:#111;border-radius:28px;box-shadow:0 18px 0 rgba(0,0,0,.35)}
+.pill{display:inline-block;padding:10px 34px;border-radius:999px;font-weight:900}
+#cap{position:absolute;left:160px;right:160px;bottom:56px;text-align:center;font-size:46px;line-height:1.5;
+ text-shadow:0 3px 0 #000,0 0 18px rgba(0,0,0,.8);min-height:70px}
+#cap span{background:rgba(5,12,24,.72);padding:6px 26px;border-radius:16px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+#prog{position:absolute;top:40px;right:120px;left:120px;display:flex;gap:18px;direction:rtl}
+#prog div{flex:1;height:64px;border-radius:16px;background:rgba(255,255,255,.08);color:var(--mut);font-size:28px;display:flex;align-items:center;justify-content:center;gap:12px;transition:none}
+#prog div.on{background:var(--y);color:#111}
+#prog div.done{background:rgba(47,207,107,.18);color:var(--g)}
+.row{display:flex;align-items:center;gap:28px}
+.check{width:84px;height:84px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:56px;font-weight:900;flex:none}
+.stamp{position:absolute;font-weight:900;border:10px solid currentColor;border-radius:20px;padding:4px 40px;transform:rotate(-10deg)}
+.vin{font-family:"DejaVu Sans Mono",monospace;letter-spacing:6px;direction:ltr}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="prog"></div>
+<div id="cap"></div>
+<script>
+const T = window.TIMELINE; // injected
+const W = '#f7f7f2';
+function car(color, opts={}){
+  const dent = opts.dent ? `<path d="M300 150 l30 30 l-20 25 l40 10 l-10 35" stroke="#111" stroke-width="7" fill="none"/>
+     <path d="M250 175 q40 30 90 10" stroke="#111" stroke-width="6" fill="none"/>` : '';
+  return `<svg viewBox="0 0 640 300" width="${opts.w||640}" style="direction:ltr">
+   <ellipse cx="320" cy="272" rx="290" ry="18" fill="rgba(0,0,0,.35)"/>
+   <path d="M40 210 Q40 160 90 150 L170 140 Q220 70 300 66 L420 66 Q480 70 530 140 L585 152 Q615 160 612 210 L612 232 L40 232 Z" fill="${color}" stroke="#0a0a0a" stroke-width="8"/>
+   <path d="M200 140 Q240 88 300 84 L360 84 L360 140 Z" fill="#bfe3ff" stroke="#0a0a0a" stroke-width="6"/>
+   <path d="M380 84 L420 84 Q470 88 505 140 L380 140 Z" fill="#bfe3ff" stroke="#0a0a0a" stroke-width="6"/>
+   <rect x="560" y="168" width="40" height="18" rx="6" fill="#ffe680" stroke="#0a0a0a" stroke-width="4"/>
+   <rect x="46" y="170" width="30" height="16" rx="5" fill="#ff6a5a" stroke="#0a0a0a" stroke-width="4"/>
+   ${dent}
+   <g stroke="#0a0a0a" stroke-width="8"><circle cx="160" cy="232" r="44" fill="#222"/><circle cx="160" cy="232" r="18" fill="#aaa"/>
+   <circle cx="490" cy="232" r="44" fill="#222"/><circle cx="490" cy="232" r="18" fill="#aaa"/></g></svg>`;
+}
+const water = (h)=>`<svg viewBox="0 0 800 300" width="800" style="position:absolute;bottom:0;left:0"><path d="M0 ${300-h} q50 -20 100 0 t100 0 t100 0 t100 0 t100 0 t100 0 t100 0 t100 0 V300 H0Z" fill="rgba(70,130,190,.82)"/></svg>`;
+const ck = (c,s)=>`<div class="check" style="background:${c};color:#111">${s}</div>`;
+const doc = (title, lines)=>`<div class="card" style="width:520px;padding:36px 40px;font-size:32px">
+  <div style="font-size:40px;font-weight:900;margin-bottom:18px">${title}</div>
+  ${lines.map(l=>`<div style="border-bottom:3px dashed #ccc;padding:10px 0">${l}</div>`).join('')}</div>`;
+const VIN = '1HGCM82633A004352';
+
+const SC = {
+hook: `
+ <div class="title a" data-s="0" data-fx="up">السيارة الأميركية<br><span class="y">لقطة؟</span></div>
+ <div class="a" data-s="0" data-fx="left" style="position:absolute;left:120px;top:300px">${car('#e8e8e8')}</div>
+ <div class="a" data-s="1" data-fx="pop" style="position:absolute;left:820px;top:560px;width:800px;height:340px;overflow:hidden">
+   <div style="position:absolute;left:80px;top:40px">${car('#8c8c8c',{w:620})}</div>${water(190)}</div>
+ <div class="stamp a r" data-s="1" data-d="1.2" data-fx="stamp" style="left:1000px;top:430px;font-size:88px">غرقانة؟</div>
+ <div class="a" data-s="2" data-fx="up" style="position:absolute;right:120px;top:520px;font-size:56px;font-weight:900">قبل ما تدفع<br><span class="y">ولا دولار</span></div>`,
+intro: `
+ <div class="title a" data-s="0" data-fx="up">٥ فحوصات<br><span class="y">قبل ما تدفع</span></div>
+ <div style="position:absolute;left:140px;top:170px;display:flex;flex-direction:column;gap:22px;font-size:46px;width:820px">
+  ${['رقم الشاسي (VIN)','تقرير أميركا','صور المزاد','الأوراق والنافعة','الميكانيكي'].map((x,i)=>
+   `<div class="row card a" data-s="0" data-d="${0.5+i*0.75}" data-fx="left" style="padding:14px 30px">${ck('#ffc928',['١','٢','٣','٤','٥'][i])}<span>${x}</span></div>`).join('')}
+ </div>
+ <div class="stamp a r" data-s="1" data-d="1.4" data-fx="stamp" style="right:180px;top:560px;font-size:80px">سقطت؟ فِلّ!</div>`,
+vin: `
+ <div class="title a" data-s="0" data-fx="up">رقم الشاسي<br><span class="y">VIN</span></div>
+ <div class="card a" data-s="1" data-fx="pop" style="position:absolute;left:140px;top:200px;padding:30px 44px">
+   <div style="font-size:28px;color:#666;direction:rtl">مثال · ١٧ حرف ورقم</div><div class="vin" style="font-size:66px;font-weight:700">${VIN}</div></div>
+ <div style="position:absolute;left:140px;right:120px;top:470px;display:flex;gap:40px;direction:rtl">
+  ${['تحت الزجاج قدّام','على باب السوفير','عالأوراق'].map((x,i)=>`<div class="card a" data-s="2" data-d="${0.6+i*1.8}" data-fx="up" style="flex:1;padding:30px;text-align:center;font-size:42px">
+     <div style="font-size:30px;color:#666">${['١','٢','٣'][i]}</div>${x}<div class="vin" style="font-size:30px;margin-top:12px;color:#333">${VIN}</div></div>`).join('')}
+ </div>
+ <div class="a" data-s="3" data-fx="pop" style="position:absolute;left:140px;top:770px;font-size:52px" ><span class="pill" style="background:var(--g);color:#111">صوّرن التلاتة</span></div>
+ <div class="stamp a r" data-s="4" data-d="1" data-fx="stamp" style="right:170px;top:745px;font-size:56px">مش متطابق؟ باي!</div>`,
+carfax: `
+ <div class="title a" data-s="0" data-fx="up" style="font-size:80px">تقرير<br><span class="y">Carfax</span><small>أو AutoCheck</small></div>
+ <div class="card a" data-s="0" data-d="0.5" data-fx="left" style="position:absolute;left:140px;top:190px;width:820px;padding:40px 50px;direction:ltr;text-align:left">
+   <div style="font-size:40px;font-weight:900;color:#1d4f91">VEHICLE HISTORY REPORT</div>
+   <div class="vin" style="font-size:30px;color:#555;margin:6px 0 26px">VIN ${VIN}</div>
+   <div style="display:flex;justify-content:space-between;font-size:42px;border-top:4px solid #eee;padding-top:22px;position:relative;height:110px">
+     <span>Title</span>
+     <span class="pill a" data-s="3" data-until="4" data-fx="pop" style="position:absolute;right:0;background:var(--g)">CLEAN</span>
+     <span class="pill a" data-s="4" data-until="5" data-fx="pop" style="position:absolute;right:0;background:var(--r);color:#fff">SALVAGE</span>
+     <span class="pill a" data-s="5" data-until="6" data-fx="pop" style="position:absolute;right:0;background:#ff9a2e">REBUILT</span>
+     <span class="pill a" data-s="6" data-fx="pop" style="position:absolute;right:0;background:var(--blue);color:#fff">FLOOD</span>
+   </div>
+ </div>
+ <div class="a" data-s="2" data-until="3" data-fx="fade" style="position:absolute;left:140px;top:600px;font-size:48px">⬆ أهم خانة: <span class="y">Title</span></div>
+ <div class="a" data-s="3" data-until="4" data-fx="up" style="position:absolute;left:140px;top:600px;font-size:54px"><span class="g">Clean</span> = منيح</div>
+ <div class="a" data-s="4" data-until="5" data-fx="up" style="position:absolute;left:140px;top:600px;font-size:50px;width:1000px"><span class="r">Salvage</span> = التأمين اعتبرتها خسارة كاملة</div>
+ <div class="a" data-s="5" data-until="6" data-fx="up" style="position:absolute;left:140px;top:600px;font-size:54px"><span style="color:#ff9a2e">Rebuilt</span> = كانت Salvage وتصلّحت</div>
+ <div class="a" data-s="6" data-fx="up" style="position:absolute;left:140px;top:600px;font-size:54px"><span style="color:#6fb6ff">Flood</span> = غرقت</div>
+ <div class="stamp a r" data-s="7" data-fx="stamp" style="right:200px;top:640px;font-size:80px">الأخطر</div>`,
+salvage: `
+ <div class="title a" data-s="0" data-fx="up"><span class="r">Salvage</span><br>مش دايمًا يعني لا</div>
+ <div class="a" data-s="1" data-fx="left" style="position:absolute;left:150px;top:220px">${car('#e8e8e8',{w:560,dent:true})}</div>
+ <div style="position:absolute;left:150px;top:560px;width:900px;font-size:40px;display:flex;flex-direction:column;gap:26px">
+   <div class="a row" data-s="2" data-fx="left"><span style="width:300px">سعر Clean</span><div style="height:60px;width:560px;background:var(--g);border-radius:12px"></div></div>
+   <div class="a row" data-s="2" data-d="0.7" data-fx="left"><span style="width:300px">سعر Salvage</span><div style="height:60px;width:300px;background:var(--r);border-radius:12px"></div><span class="y" style="white-space:nowrap">لازم أرخص بكتير</span></div>
+ </div>
+ <div class="stamp a r" data-s="3" data-d="1.5" data-fx="stamp" style="right:200px;top:790px;font-size:56px">Salvage بسعر Clean؟ ✗</div>`,
+auction: `
+ <div class="title a" data-s="0" data-fx="up">صور<br><span class="y">المزاد</span></div>
+ <div class="a" data-s="1" data-fx="pop" style="position:absolute;right:120px;top:450px;display:flex;gap:20px;direction:ltr">
+   <span class="pill" style="background:#1a4fa0;font-size:44px">Copart</span><span class="pill" style="background:#d9302c;font-size:44px">IAAI</span></div>
+ <div class="card a" data-s="2" data-fx="left" style="position:absolute;left:120px;top:150px;width:1040px;height:720px;overflow:hidden;direction:ltr">
+   <div style="background:#e9edf3;padding:22px 30px;display:flex;gap:16px;align-items:center">
+     <div style="display:flex;gap:10px"><i style="width:22px;height:22px;border-radius:50%;background:#ff5f57;display:block"></i><i style="width:22px;height:22px;border-radius:50%;background:#febc2e;display:block"></i><i style="width:22px;height:22px;border-radius:50%;background:#28c840;display:block"></i></div>
+     <div class="vin typed" data-s="3" style="flex:1;background:#fff;border-radius:14px;padding:10px 22px;font-size:32px;letter-spacing:3px;color:#222" data-text="${VIN}"></div></div>
+   <div class="a" data-s="3" data-d="1.8" data-fx="fade" style="padding:30px 40px;position:relative">
+     <div style="font-size:30px;color:#888">LOT · SALVAGE · SOLD</div>
+     <div style="position:relative;margin-top:10px">${car('#7d8796',{w:760,dent:true})}
+       <div class="a" data-s="4" data-fx="pop" style="position:absolute;left:230px;top:80px;width:180px;height:180px;border:10px solid var(--r);border-radius:50%"></div></div>
+   </div>
+ </div>
+ <div class="stamp a g" data-s="5" data-fx="stamp" style="right:200px;top:690px;font-size:64px">الصورة ما بتكذب</div>`,
+customs: `
+ <div class="title a" data-s="0" data-fx="up">الأوراق<br><span class="y">اللبنانية</span></div>
+ <div style="position:absolute;left:120px;top:220px;display:flex;gap:50px;direction:rtl">
+  <div class="a" data-s="1" data-fx="up">${doc('البيان الجمركي',['المستورد: ———','البلد: USA',`<span class="vin" style="background:#fff2a8">${VIN}</span>`])}</div>
+  <div class="a" data-s="1" data-d="1.2" data-fx="up">${doc('السيارة',['تحت الزجاج','باب السوفير',`<span class="vin" style="background:#fff2a8">${VIN}</span>`])}</div>
+ </div>
+ <div class="a" data-s="1" data-d="5" data-fx="pop" style="position:absolute;left:560px;top:700px;font-size:60px" ><span class="pill" style="background:var(--g);color:#111">= متطابق ✓</span></div>`,
+nafaa: `
+ <div class="title a" data-s="0" data-fx="up">النافعة<br><span class="y">٣ شغلات</span></div>
+ <div style="position:absolute;left:140px;top:190px;width:1050px;display:flex;flex-direction:column;gap:26px;font-size:44px">
+   <div class="card row a" data-s="1" data-fx="left" style="padding:22px 32px">${ck('#2fcf6b','✓')}<span>البيّاع هوي المالك، أو معو وكالة قانونية</span></div>
+   <div class="card row a" data-s="2" data-fx="left" style="padding:22px 32px">${ck('#2fcf6b','✓')}<span>ما في حجز ولا رهن</span></div>
+   <div class="card row a" data-s="3" data-fx="left" style="padding:22px 32px">${ck('#2fcf6b','✓')}<span>المعلومات مطابقة للسيارة</span></div>
+ </div>
+ <div class="stamp a r" data-s="4" data-fx="stamp" style="right:190px;top:700px;font-size:78px">ما تدفع عربون!</div>`,
+mechanic: `
+ <div class="title a" data-s="0" data-fx="up">الميكانيكي<br><span class="y">تبعك إنت</span></div>
+ <div class="a" data-s="1" data-until="3" data-fx="pop" style="position:absolute;left:180px;top:480px;font-size:64px"><span class="stamp r" style="position:static;display:inline-block">مش تبع البيّاع ✗</span></div>
+ <div style="position:absolute;left:120px;top:370px;display:flex;gap:36px;direction:rtl">
+  ${[['١','جهاز فحص OBD','الأعطال المخزّنة',3],['٢','سماكة البويا','قطعة أسمك = انضربت',4],['٣','علامات الغرق','صدا · حل · ريحة رطوبة',6]].map(([n,a,b,s])=>
+   `<div class="card a" data-s="${s}" data-fx="up" style="width:520px;padding:36px;text-align:center">
+     <div class="check" style="margin:0 auto 14px;background:var(--y)">${n}</div>
+     <div style="font-size:46px;font-weight:900">${a}</div><div style="font-size:34px;color:#555;margin-top:10px">${b}</div></div>`).join('')}
+ </div>
+ <div class="a" data-s="5" data-fx="pop" style="position:absolute;left:220px;top:725px;height:120px;direction:ltr;display:flex;gap:30px;font-size:40px">
+   ${[40,44,120,42].map((v,i)=>`<div style="width:110px;height:${v}px;align-self:flex-end;border-radius:10px;background:${i==2?'var(--r)':'rgba(255,255,255,.25)'}"></div>`).join('')}
+   <span class="r" style="font-size:40px;align-self:center;direction:rtl">⬅ أسمك = انضربت</span></div>`,
+airbag: `
+ <div class="title a" data-s="0" data-fx="up">ضو الـ<br><span class="y">airbag</span></div>
+ <div class="a" data-s="0" data-d="0.4" data-fx="pop" style="position:absolute;left:180px;top:220px;width:900px;height:520px;border-radius:260px 260px 60px 60px;background:#0a0f18;border:12px solid #2a3550;display:flex;align-items:center;justify-content:center">
+   <div class="blink" data-s="1" style="width:220px;height:220px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:120px;background:#2a1a0a;color:#3a2a1a">
+     <svg viewBox="0 0 100 100" width="150"><circle cx="35" cy="22" r="11" fill="currentColor"/><path d="M28 36 h16 l8 28 h-12 l-4 22 h-10 z" fill="currentColor"/><circle cx="72" cy="52" r="20" fill="none" stroke="currentColor" stroke-width="8"/></svg></div>
+ </div>
+ <div class="a" data-s="1" data-fx="up" style="position:absolute;right:120px;top:520px;font-size:52px">بيضوّي <span class="y">←</span> بيطفي ✓</div>
+ <div class="stamp a r" data-s="2" data-d="1" data-fx="stamp" style="right:160px;top:700px;font-size:66px">ما ضوّى أبدًا؟ ✗</div>`,
+drive: `
+ <div class="title a" data-s="0" data-fx="up">التجربة<br><span class="y">سوقها</span></div>
+ <svg style="position:absolute;left:0;top:560px" width="1920" height="380" viewBox="0 0 1920 380"><path d="M0 300 Q300 300 480 180 T960 160 T1440 260 T1920 200 V380 H0Z" fill="#1d3557"/><path d="M0 300 Q300 300 480 180 T960 160 T1440 260 T1920 200" stroke="#ffc928" stroke-width="8" stroke-dasharray="40 30" fill="none"/></svg>
+ <div class="drivecar" style="position:absolute;top:470px;left:0">${car('#ef3b36',{w:300})}</div>
+ <div style="position:absolute;right:120px;top:410px;display:flex;gap:20px;font-size:44px">
+   ${['طلعة','نزلة','فرامل قوية','الدركسيون للآخر'].map((x,i)=>`<span class="pill a" data-s="${i<3?2:3}" data-d="${i<3?i*1.2:0}" data-fx="pop" style="background:var(--y);color:#111">${x}</span>`).join('')}</div>`,
+summary: `
+ <div class="title a" data-s="0" data-fx="up">الـ checklist<br><span class="y">كاملة</span></div>
+ <div style="position:absolute;left:140px;top:170px;display:flex;flex-direction:column;gap:22px;font-size:46px;width:820px">
+  ${['رقم الشاسي (VIN)','تقرير أميركا','صور المزاد','الأوراق والنافعة','الميكانيكي'].map((x,i)=>
+   `<div class="row card a" data-s="0" data-d="${2+i*1.4}" data-fx="left" style="padding:14px 30px">${ck('#2fcf6b','✓')}<span>${x}</span></div>`).join('')}
+ </div>
+ <div class="a" data-s="1" data-fx="pop" style="position:absolute;right:120px;top:560px;font-size:52px">بالـ description <span class="y">⬇</span></div>`,
+outro: `
+ <div class="title a" data-s="0" data-fx="up" style="top:300px">بعتو لرفيقك<br><span class="y">قبل ما يدفع</span></div>
+ <div class="a" data-s="0" data-d="1" data-fx="left" style="position:absolute;left:140px;top:320px">${car('#2f8ff0',{w:700})}</div>
+ <div class="a" data-s="1" data-fx="pop" style="position:absolute;right:120px;top:640px;font-size:60px"><span class="pill" style="background:var(--g);color:#111">وفّرلو مصاري</span></div>`
+};
+const PROG = {vin:0,carfax:1,salvage:1,auction:2,customs:3,nafaa:3,mechanic:4,airbag:4,drive:4};
+const PNAMES = ['رقم الشاسي','تقرير أميركا','صور المزاد','الأوراق والنافعة','الميكانيكي'];
+
+const stage = document.getElementById('stage');
+const scEls = T.scenes.map((s,i)=>{const d=document.createElement('div');d.className='scene';d.innerHTML=SC[s.kind];stage.appendChild(d);return d;});
+const prog = document.getElementById('prog');
+PNAMES.forEach((n,i)=>{const d=document.createElement('div');d.textContent=`${['١','٢','٣','٤','٥'][i]} · ${n}`;prog.appendChild(d);});
+const cap = document.getElementById('cap');
+
+const clamp=(x)=>Math.max(0,Math.min(1,x));
+const eo=(p)=>1-Math.pow(1-p,3);
+const back=(p)=>{const c=1.7;return 1+(c+1)*Math.pow(p-1,3)+c*Math.pow(p-1,2);};
+function fx(el,kind,p){
+  const q=clamp(p);
+  let o=clamp(q*2.2), tr='';
+  if(kind==='up') tr=`translateY(${(1-eo(q))*60}px)`;
+  else if(kind==='left') tr=`translateX(${(1-eo(q))*-120}px)`;
+  else if(kind==='pop') tr=`scale(${0.6+0.4*back(q)})`;
+  else if(kind==='stamp'){ tr=`rotate(-10deg) scale(${2.2-1.2*eo(q)})`; o=clamp(q*3); }
+  el.style.opacity=o; el.style.transform=tr;
+}
+let lastScene=-1;
+window.renderAt = function(t){
+  let i=T.scenes.findIndex(s=>t>=s.start && t<s.start+s.len); if(i<0) i=T.scenes.length-1;
+  const s=T.scenes[i], lt=t-s.start;
+  if(i!==lastScene){ scEls.forEach((e,k)=>e.style.display=k===i?'block':'none'); lastScene=i; }
+  const root=scEls[i];
+  const sStart=(n)=> (s.sent[n]||s.sent[s.sent.length-1])[0];
+  root.querySelectorAll('.a').forEach(el=>{
+    const st=sStart(+el.dataset.s)+(+el.dataset.d||0);
+    let p=(lt-st)/0.45;
+    if(el.dataset.until!==undefined && lt>=sStart(+el.dataset.until)) p=-1;
+    fx(el,el.dataset.fx||'fade',p);
+  });
+  root.querySelectorAll('.typed').forEach(el=>{
+    const st=sStart(+el.dataset.s); const n=Math.floor(clamp((lt-st)/1.6)*el.dataset.text.length);
+    el.textContent=el.dataset.text.slice(0,n)+(n<el.dataset.text.length && Math.floor(lt*3)%2?'|':'');
+  });
+  root.querySelectorAll('.blink').forEach(el=>{
+    const st=sStart(+el.dataset.s); const on = lt>=st && lt<st+1.6;
+    el.style.background=on?'#ffb000':'#2a1a0a'; el.style.color=on?'#3a1d00':'#3a2a1a';
+    el.style.boxShadow=on?'0 0 80px #ffb000':'none';
+  });
+  root.querySelectorAll('.drivecar').forEach(el=>{
+    const x=-320+((lt/ s.len)*2300); const cx=x+150;
+    const P=[[0,300],[480,180],[960,160],[1440,260],[1920,200]];
+    let k=0; while(k<P.length-2 && cx>P[k+1][0]) k++;
+    const f=clamp((cx-P[k][0])/(P[k+1][0]-P[k][0])); const yy=P[k][1]+(P[k+1][1]-P[k][1])*(0.5-0.5*Math.cos(Math.PI*f));
+    el.style.top='0'; el.style.left='0'; el.style.transform=`translate(${x}px,${560+yy-140}px)`;
+  });
+  // camera drift so no frame is still
+  root.style.transform=`scale(${1+0.025*clamp(lt/s.len)})`;
+  // progress bar
+  const pi=PROG[s.kind];
+  prog.style.opacity = (pi===undefined && s.kind!=='summary')?0:1;
+  [...prog.children].forEach((d,k)=>{d.className = s.kind==='summary' ? 'done' : (k===pi?'on':(k<pi?'done':''));});
+  // caption
+  const cur=s.sent.find(x=>lt>=x[0]&&lt<x[1]+0.25);
+  const txt=cur?cur[2]:'';
+  if(cap.dataset.t!==txt){cap.dataset.t=txt;cap.innerHTML=txt?`<span>${txt}</span>`:'';}
+};
+</script>
+</body>
+</html>
