@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<style>
+@font-face{font-family:Cairo;font-weight:700;src:url(deps/package/files/cairo-arabic-700-normal.woff2) format("woff2")}
+@font-face{font-family:Cairo;font-weight:900;src:url(deps/package/files/cairo-arabic-900-normal.woff2) format("woff2")}
+@font-face{font-family:CairoL;font-weight:700;src:url(deps/package/files/cairo-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:CairoL;font-weight:900;src:url(deps/package/files/cairo-latin-900-normal.woff2) format("woff2")}
+:root{--bg:#0d1b2e;--bg2:#13284a;--y:#ffc928;--r:#ef3b36;--g:#2fcf6b;--w:#f7f7f2;--mut:#8ea3c2;--blue:#2f8ff0}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1920px;height:1080px;overflow:hidden;background:var(--bg)}
+body{font-family:CairoL,Cairo,sans-serif;font-weight:700;color:var(--w)}
+#stage{position:absolute;inset:0;background:radial-gradient(1200px 800px at 70% 30%,var(--bg2),var(--bg))}
+.scene{position:absolute;inset:0;display:none;overflow:hidden}
+.a{will-change:transform,opacity}
+.title{position:absolute;top:150px;right:120px;font-size:96px;font-weight:900;line-height:1.15}
+.title small{display:block;font-size:44px;color:var(--y);font-weight:700}
+.y{color:var(--y)} .r{color:var(--r)} .g{color:var(--g)}
+.card{background:var(--w);color:#111;border-radius:28px;box-shadow:0 18px 0 rgba(0,0,0,.35)}
+.pill{display:inline-block;padding:10px 34px;border-radius:999px;font-weight:900}
+#cap{position:absolute;left:160px;right:160px;bottom:56px;text-align:center;font-size:46px;line-height:1.5;
+ text-shadow:0 3px 0 #000,0 0 18px rgba(0,0,0,.8);min-height:70px}
+#cap span{background:rgba(5,12,24,.72);padding:6px 26px;border-radius:16px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+#prog{position:absolute;top:40px;right:120px;left:120px;display:flex;gap:18px;direction:rtl}
+#prog div{flex:1;height:64px;border-radius:16px;background:rgba(255,255,255,.08);color:var(--mut);font-size:28px;display:flex;align-items:center;justify-content:center;gap:12px;transition:none}
+#prog div.on{background:var(--y);color:#111}
+#prog div.done{background:rgba(47,207,107,.18);color:var(--g)}
+.row{display:flex;align-items:center;gap:28px}
+.check{width:84px;height:84px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:56px;font-weight:900;flex:none}
+.stamp{position:absolute;font-weight:900;border:10px solid currentColor;border-radius:20px;padding:4px 40px;transform:rotate(-10deg)}
+.vin{font-family:"DejaVu Sans Mono",monospace;letter-spacing:6px;direction:ltr}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="prog"></div>
+<div id="cap"></div>
+<script>
+const T = window.TIMELINE; // injected
+const W = '#f7f7f2';
+function car(color, opts={}){
+  const dent = opts.dent ? `<path d="M300 150 l30 30 l-20 25 l40 10 l-10 35" stroke="#111" stroke-width="7" fill="none"/>
+     <path d="M250 175 q40 30 90 10" stroke="#111" stroke-width="6" fill="none"/>` : '';
+  return `<svg viewBox="0 0 640 300" width="${opts.w||640}" style="direction:ltr">
+   <ellipse cx="320" cy="272" rx="290" ry="18" fill="rgba(0,0,0,.35)"/>
+   <path d="M40 210 Q40 160 90 150 L170 140 Q220 70 300 66 L420 66 Q480 70 530 140 L585 152 Q615 160 612 210 L612 232 L40 232 Z" fill="${color}" stroke="#0a0a0a" stroke-width="8"/>
+   <path d="M200 140 Q240 88 300 84 L360 84 L360 140 Z" fill="#bfe3ff" stroke="#0a0a0a" stroke-width="6"/>
+   <path d="M380 84 L420 84 Q470 88 505 140 L380 140 Z" fill="#bfe3ff" stroke="#0a0a0a" stroke-width="6"/>
+   <rect x="560" y="168" width="40" height="18" rx="6" fill="#ffe680" stroke="#0a0a0a" stroke-width="4"/>
+   <rect x="46" y="170" width="30" height="16" rx="5" fill="#ff6a5a" stroke="#0a0a0a" stroke-width="4"/>
+   ${dent}
+   <g stroke="#0a0a0a" stroke-width="8"><circle cx="160" cy="232" r="44" fill="#222"/><circle cx="160" cy="232" r="18" fill="#aaa"/>
+   <circle cx="490" cy="232" r="44" fill="#222"/><circle cx="490" cy="232" r="18" fill="#aaa"/></g></svg>`;
+}
+const water = (h)=>`<svg viewBox="0 0 800 300" width="800" style="position:absolute;bottom:0;left:0"><path d="M0 ${300-h} q50 -20 100 0 t100 0 t100 0 t100 0 t100 0 t100 0 t100 0 t100 0 V300 H0Z" fill="rgba(70,130,190,.82)"/></svg>`;
+const ck = (c,s)=>`<div class="check" style="background:${c};color:#111">${s}</div>`;
+const doc = (title, lines)=>`<div class="card" style="width:520px;padding:36px 40px;font-size:32px">
+  <div style="font-size:40px;font-weight:900;margin-bottom:18px">${title}</div>
+  ${lines.map(l=>`<div style="border-bottom:3px dashed #ccc;padding:10px 0">${l}</div>`).join('')}</div>`;
+const VIN = '1HGCM82633A004352';
+
+const badge=(sz)=>`<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:var(--y);border:${sz*0.035}px solid #111;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#0d1b2e;box-shadow:0 ${sz*0.04}px 0 rgba(0,0,0,.35)">
+  <div style="font-size:${sz*0.1}px;font-weight:700;line-height:1;white-space:nowrap">المعلم</div>
+  <div style="font-size:${sz*0.17}px;font-weight:900;line-height:1.25;white-space:nowrap">أبو محمد</div>
+  <div style="margin-top:${sz*0.01}px">${car('#0d1b2e',{w:sz*0.46})}</div></div>`;
+const SC = {
+t_hook: `
+ <div class="title a" data-s="0" data-fx="up">رايح تشتري<br><span class="y">سيارة مستعملة؟</span></div>
+ <div class="a" data-s="0" data-d="0.4" data-fx="left" style="position:absolute;left:140px;top:300px">${car('#e8e8e8',{w:720})}</div>
+ <div class="stamp a r" data-s="0" data-d="2.6" data-fx="stamp" style="right:180px;top:560px;font-size:84px">قبل ما تدفع!</div>`,
+t_who: `
+ <div class="a" data-s="0" data-fx="pop" style="position:absolute;right:220px;top:200px">${badge(520)}</div>
+ <div class="a" data-s="0" data-d="0.6" data-fx="left" style="position:absolute;left:160px;top:260px;font-size:110px;font-weight:900;line-height:1.1">المعلم<br><span class="y">أبو محمد</span></div>
+ <div class="a" data-s="1" data-fx="pop" style="position:absolute;left:160px;top:560px;font-size:52px"><span class="pill" style="background:rgba(255,255,255,.12)">مش ميكانيكي</span></div>
+ <div class="a" data-s="1" data-d="1.6" data-fx="up" style="position:absolute;left:160px;top:680px;font-size:52px">بس بعرف قدّيش سهل <span class="r">تنغشّ</span></div>`,
+t_what: `
+ <div class="title a" data-s="0" data-fx="up">كل أسبوع<br><span class="y">فيديوهين</span></div>
+ <div style="position:absolute;left:140px;top:200px;display:grid;grid-template-columns:repeat(2,460px);gap:30px;font-size:46px">
+  ${['شو لازم تفحص','شو يعني Salvage','كيف تقرا الأوراق','كيف تحمي مصرياتك'].map((x,i)=>
+   `<div class="card a" data-s="0" data-d="${1.2+i*1.3}" data-fx="pop" style="padding:34px;text-align:center;font-weight:900">${x}</div>`).join('')}
+ </div>
+ <div class="a" data-s="1" data-fx="up" style="position:absolute;left:140px;top:640px;font-size:50px"><span class="pill" style="background:var(--g);color:#111">✓ خدها لميكانيكي بتوثق فيه</span></div>`,
+t_cta: `
+ <div class="a" data-s="0" data-fx="pop" style="position:absolute;right:200px;top:220px">${badge(380)}</div>
+ <div class="a" data-s="0" data-d="1" data-fx="pop" style="position:absolute;left:200px;top:260px;font-size:100px;font-weight:900"><span class="pill" style="background:var(--r);color:#fff;padding:24px 80px">اشترك</span></div>
+ <div class="a" data-s="0" data-d="2.2" data-fx="up" style="position:absolute;left:200px;top:520px;font-size:54px">وبلّش بفيديو<br><span class="y">الـ ٥ فحوصات قبل ما تدفع</span></div>`
+};
+const PROG = {vin:0,carfax:1,salvage:1,auction:2,customs:3,nafaa:3,mechanic:4,airbag:4,drive:4};
+const PNAMES = ['رقم الشاسي','تقرير أميركا','صور المزاد','الأوراق والنافعة','الميكانيكي'];
+
+const stage = document.getElementById('stage');
+const scEls = T.scenes.map((s,i)=>{const d=document.createElement('div');d.className='scene';d.innerHTML=SC[s.kind];stage.appendChild(d);return d;});
+const prog = document.getElementById('prog');
+PNAMES.forEach((n,i)=>{const d=document.createElement('div');d.textContent=`${['١','٢','٣','٤','٥'][i]} · ${n}`;prog.appendChild(d);});
+const cap = document.getElementById('cap');
+
+const clamp=(x)=>Math.max(0,Math.min(1,x));
+const eo=(p)=>1-Math.pow(1-p,3);
+const back=(p)=>{const c=1.7;return 1+(c+1)*Math.pow(p-1,3)+c*Math.pow(p-1,2);};
+function fx(el,kind,p){
+  const q=clamp(p);
+  let o=clamp(q*2.2), tr='';
+  if(kind==='up') tr=`translateY(${(1-eo(q))*60}px)`;
+  else if(kind==='left') tr=`translateX(${(1-eo(q))*-120}px)`;
+  else if(kind==='pop') tr=`scale(${0.6+0.4*back(q)})`;
+  else if(kind==='stamp'){ tr=`rotate(-10deg) scale(${2.2-1.2*eo(q)})`; o=clamp(q*3); }
+  el.style.opacity=o; el.style.transform=tr;
+}
+let lastScene=-1;
+window.renderAt = function(t){
+  let i=T.scenes.findIndex(s=>t>=s.start && t<s.start+s.len); if(i<0) i=T.scenes.length-1;
+  const s=T.scenes[i], lt=t-s.start;
+  if(i!==lastScene){ scEls.forEach((e,k)=>e.style.display=k===i?'block':'none'); lastScene=i; }
+  const root=scEls[i];
+  const sStart=(n)=> (s.sent[n]||s.sent[s.sent.length-1])[0];
+  root.querySelectorAll('.a').forEach(el=>{
+    const st=sStart(+el.dataset.s)+(+el.dataset.d||0);
+    let p=(lt-st)/0.45;
+    if(el.dataset.until!==undefined && lt>=sStart(+el.dataset.until)) p=-1;
+    fx(el,el.dataset.fx||'fade',p);
+  });
+  root.querySelectorAll('.typed').forEach(el=>{
+    const st=sStart(+el.dataset.s); const n=Math.floor(clamp((lt-st)/1.6)*el.dataset.text.length);
+    el.textContent=el.dataset.text.slice(0,n)+(n<el.dataset.text.length && Math.floor(lt*3)%2?'|':'');
+  });
+  root.querySelectorAll('.blink').forEach(el=>{
+    const st=sStart(+el.dataset.s); const on = lt>=st && lt<st+1.6;
+    el.style.background=on?'#ffb000':'#2a1a0a'; el.style.color=on?'#3a1d00':'#3a2a1a';
+    el.style.boxShadow=on?'0 0 80px #ffb000':'none';
+  });
+  root.querySelectorAll('.drivecar').forEach(el=>{
+    const x=-320+((lt/ s.len)*2300); const cx=x+150;
+    const P=[[0,300],[480,180],[960,160],[1440,260],[1920,200]];
+    let k=0; while(k<P.length-2 && cx>P[k+1][0]) k++;
+    const f=clamp((cx-P[k][0])/(P[k+1][0]-P[k][0])); const yy=P[k][1]+(P[k+1][1]-P[k][1])*(0.5-0.5*Math.cos(Math.PI*f));
+    el.style.top='0'; el.style.left='0'; el.style.transform=`translate(${x}px,${560+yy-140}px)`;
+  });
+  // camera drift so no frame is still
+  root.style.transform=`scale(${1+0.025*clamp(lt/s.len)})`;
+  // progress bar
+  const pi=PROG[s.kind];
+  prog.style.opacity = (pi===undefined && s.kind!=='summary')?0:1;
+  [...prog.children].forEach((d,k)=>{d.className = s.kind==='summary' ? 'done' : (k===pi?'on':(k<pi?'done':''));});
+  // caption
+  const cur=s.sent.find(x=>lt>=x[0]&&lt<x[1]+0.25);
+  const txt=cur?cur[2]:'';
+  if(cap.dataset.t!==txt){cap.dataset.t=txt;cap.innerHTML=txt?`<span>${txt}</span>`:'';}
+};
+</script>
+</body>
+</html>
